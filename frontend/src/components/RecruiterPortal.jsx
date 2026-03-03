@@ -16,6 +16,7 @@ function RecruiterPortal({ setIsAuthenticated }) {
   const [jobs, setJobs] = useState([])
   const [jobForm, setJobForm] = useState(emptyJob)
   const [selectedJobId, setSelectedJobId] = useState('')
+  const [jobFilter, setJobFilter] = useState('all')
   const [ranking, setRanking] = useState([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -56,9 +57,30 @@ function RecruiterPortal({ setIsAuthenticated }) {
   const publishJob = async (id) => {
     try {
       await api.post(`/jobs/${id}/publish`)
+      setMessage('Job published successfully.')
       loadJobs()
     } catch (e) {
       setError(e.response?.data?.error || 'Failed to publish job')
+    }
+  }
+
+  const closeJob = async (id) => {
+    try {
+      await api.post(`/jobs/${id}/close`)
+      setMessage('Job closed successfully.')
+      loadJobs()
+    } catch (e) {
+      setError(e.response?.data?.error || 'Failed to close job')
+    }
+  }
+
+  const archiveJob = async (id) => {
+    try {
+      await api.post(`/jobs/${id}/archive`)
+      setMessage('Job archived successfully.')
+      loadJobs()
+    } catch (e) {
+      setError(e.response?.data?.error || 'Failed to archive job')
     }
   }
 
@@ -72,16 +94,43 @@ function RecruiterPortal({ setIsAuthenticated }) {
     }
   }
 
+  const filteredJobs = jobs.filter((job) => jobFilter === 'all' ? true : job.status === jobFilter)
+  const publishedCount = jobs.filter((job) => job.status === 'published').length
+  const draftCount = jobs.filter((job) => job.status === 'draft').length
+  const closedCount = jobs.filter((job) => job.status === 'closed').length
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-card" style={{ maxWidth: 1000 }}>
         <div className="dashboard-header">
           <h1>Recruiter Portal</h1>
-          <button onClick={handleLogout} className="logout-btn">Logout</button>
+          <div className="actions-row">
+            <button onClick={loadJobs} className="secondary-btn">Refresh</button>
+            <button onClick={handleLogout} className="logout-btn">Logout</button>
+          </div>
         </div>
 
         {message && <div className="info-success">{message}</div>}
         {error && <div className="error-message">{error}</div>}
+
+        <div className="stats-grid">
+          <div className="stat-card">
+            <p className="stat-label">Total Jobs</p>
+            <p className="stat-value">{jobs.length}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Published</p>
+            <p className="stat-value">{publishedCount}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Draft</p>
+            <p className="stat-value">{draftCount}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Closed</p>
+            <p className="stat-value">{closedCount}</p>
+          </div>
+        </div>
 
         <div className="user-info">
           <h2>Create Job</h2>
@@ -116,16 +165,36 @@ function RecruiterPortal({ setIsAuthenticated }) {
 
         <div className="user-info">
           <h2>Jobs</h2>
-          {jobs.map((job) => (
+          <div className="form-group">
+            <label htmlFor="jobFilter">Filter jobs</label>
+            <select id="jobFilter" value={jobFilter} onChange={(e) => setJobFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="closed">Closed</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          {filteredJobs.map((job) => (
             <div key={job.id} className="info-item">
               <span className="info-label">
                 #{job.id} {job.title}
               </span>
               <span className="info-value">
                 {job.status}{' '}
-                {job.status !== 'published' && (
+                {job.status !== 'published' && job.status !== 'archived' && (
                   <button className="admin-panel-btn" style={{ marginLeft: 8 }} onClick={() => publishJob(job.id)}>
                     Publish
+                  </button>
+                )}
+                {job.status === 'published' && (
+                  <button className="secondary-btn" style={{ marginLeft: 8 }} onClick={() => closeJob(job.id)}>
+                    Close
+                  </button>
+                )}
+                {job.status !== 'archived' && (
+                  <button className="secondary-btn" style={{ marginLeft: 8 }} onClick={() => archiveJob(job.id)}>
+                    Archive
                   </button>
                 )}
               </span>

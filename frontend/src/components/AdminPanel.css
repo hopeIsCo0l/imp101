@@ -57,6 +57,28 @@
   font-size: 1.5rem;
 }
 
+.admin-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.toolbar-item label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #555;
+}
+
+.toolbar-item input,
+.toolbar-item select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
 .users-table-container {
   overflow-x: auto;
   border-radius: 8px;
@@ -85,6 +107,7 @@
   padding: 15px;
   border-bottom: 1px solid #f0f0f0;
   color: #555;
+  vertical-align: top;
 }
 
 .users-table tbody tr:hover {
@@ -136,4 +159,25 @@
   color: #666;
   font-size: 18px;
   padding: 40px;
+}
+
+.action-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-wrap select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  min-width: 140px;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
 }

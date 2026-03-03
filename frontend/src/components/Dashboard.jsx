@@ -6,21 +6,27 @@ import './Dashboard.css'
 
 function Dashboard({ setIsAuthenticated }) {
   const [user, setUser] = useState(null)
+  const [jobs, setJobs] = useState([])
+  const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [userRole, setUserRole] = useState(null)
 
   useEffect(() => {
-    fetchUser()
-    // Get role from token
     const role = getUserRole()
     setUserRole(role)
+    loadDashboard(role)
   }, [])
 
-  const fetchUser = async () => {
+  const loadDashboard = async (role) => {
     try {
-      const response = await api.get('/users')
-      setUser(response.data)
+      const userPromise = api.get('/users')
+      const jobsPromise = role === 'candidate' ? api.get('/jobs?status=published') : api.get('/jobs')
+      const applicationsPromise = role === 'candidate' ? api.get('/applications') : Promise.resolve({ data: [] })
+      const [userResponse, jobsResponse, applicationsResponse] = await Promise.all([userPromise, jobsPromise, applicationsPromise])
+      setUser(userResponse.data)
+      setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : [])
+      setApplications(Array.isArray(applicationsResponse.data) ? applicationsResponse.data : [])
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch user data')
     } finally {
@@ -33,6 +39,9 @@ function Dashboard({ setIsAuthenticated }) {
     setIsAuthenticated(false)
     window.location.href = '/login'
   }
+
+  const statusCount = (status) => jobs.filter((job) => job.status === status).length
+  const roleHomeRoute = userRole === 'candidate' ? '/candidate' : userRole === 'recruiter' ? '/recruiter' : '/admin'
 
   if (loading) {
     return (
@@ -67,6 +76,35 @@ function Dashboard({ setIsAuthenticated }) {
           </button>
         </div>
 
+        <div className="stats-grid">
+          <div className="stat-card">
+            <p className="stat-label">Active Role</p>
+            <p className="stat-value">{userRole || '-'}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Jobs Visible</p>
+            <p className="stat-value">{jobs.length}</p>
+          </div>
+          {userRole === 'candidate' && (
+            <div className="stat-card">
+              <p className="stat-label">My Applications</p>
+              <p className="stat-value">{applications.length}</p>
+            </div>
+          )}
+          {(userRole === 'recruiter' || userRole === 'administrator' || userRole === 'super_admin') && (
+            <>
+              <div className="stat-card">
+                <p className="stat-label">Published Jobs</p>
+                <p className="stat-value">{statusCount('published')}</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-label">Draft Jobs</p>
+                <p className="stat-value">{statusCount('draft')}</p>
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="user-info">
           <h2>User Information</h2>
           <div className="info-item">
@@ -80,7 +118,7 @@ function Dashboard({ setIsAuthenticated }) {
           <div className="info-item">
             <span className="info-label">Role:</span>
             <span className="info-value">
-              <span className={`role-badge role-badge-${userRole || user?.role || 'regular'}`}>
+              <span className={`role-badge role-badge-${userRole || user?.role || 'candidate'}`}>
                 {userRole || user?.role || 'regular'}
               </span>
             </span>
@@ -99,11 +137,38 @@ function Dashboard({ setIsAuthenticated }) {
           </div>
         </div>
 
-        {userRole === 'super_admin' && (
-          <div className="admin-section">
-            <Link to="/admin" className="admin-panel-btn">
-              Admin Panel
+        <div className="admin-section">
+          <h2>Quick Actions</h2>
+          <div className="actions-row">
+            <Link to={roleHomeRoute} className="admin-panel-btn">
+              Open {userRole === 'candidate' ? 'Candidate Portal' : userRole === 'recruiter' ? 'Recruiter Portal' : 'Admin Panel'}
             </Link>
+            {userRole === 'candidate' && (
+              <Link to="/candidate" className="secondary-btn">
+                Apply to Jobs
+              </Link>
+            )}
+            {(userRole === 'administrator' || userRole === 'super_admin') && (
+              <Link to="/admin" className="secondary-btn">
+                Manage Users
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {userRole === 'candidate' && (
+          <div className="user-info">
+            <h2>Application Activity</h2>
+            {applications.length === 0 ? (
+              <p>No applications submitted yet.</p>
+            ) : (
+              applications.slice(0, 5).map((app) => (
+                <div className="info-item" key={app.id}>
+                  <span className="info-label">Application #{app.id}</span>
+                  <span className="info-value">{app.status} | Final Score: {Number(app.final_score || 0).toFixed(2)}</span>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

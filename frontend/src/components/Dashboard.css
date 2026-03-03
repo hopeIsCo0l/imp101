@@ -1,9 +1,10 @@
 .dashboard-container {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
   padding: 20px;
+  background: #f5f7fb;
 }
 
 .dashboard-card {
@@ -12,7 +13,7 @@
   padding: 40px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 600px;
+  max-width: 1100px;
 }
 
 .dashboard-header {
@@ -48,6 +49,33 @@
 
 .user-info {
   margin-top: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.stat-label {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.stat-value {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
 }
 
 .user-info h2 {
@@ -141,6 +169,21 @@
   color: #1976d2;
 }
 
+.role-badge-candidate {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.role-badge-recruiter {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.role-badge-administrator {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
 .role-badge-super_admin {
   background: #fff3e0;
   color: #e65100;
@@ -165,4 +208,25 @@
 
 .admin-panel-btn:hover {
   background: #5568d3;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.secondary-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #f3f4f6;
+  color: #111827;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+}
+
+.secondary-btn:hover {
+  background: #e5e7eb;
 }

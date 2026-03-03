@@ -6,6 +6,8 @@ import './Dashboard.css'
 function CandidatePortal({ setIsAuthenticated }) {
   const [jobs, setJobs] = useState([])
   const [applications, setApplications] = useState([])
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [selectedJobId, setSelectedJobId] = useState('')
   const [cvFile, setCvFile] = useState(null)
   const [coverLetter, setCoverLetter] = useState('')
@@ -66,25 +68,67 @@ function CandidatePortal({ setIsAuthenticated }) {
     }
   }
 
+  const filteredJobs = jobs.filter((job) => {
+    const title = String(job.title || '').toLowerCase()
+    const skills = String(job.required_skills || '').toLowerCase()
+    const query = search.toLowerCase()
+    return title.includes(query) || skills.includes(query)
+  })
+
+  const filteredApplications = applications.filter((app) => statusFilter === 'all' ? true : app.status === statusFilter)
+  const submittedCount = applications.filter((app) => app.status === 'submitted').length
+  const rankedCount = applications.filter((app) => app.status === 'ranked').length
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-card" style={{ maxWidth: 900 }}>
         <div className="dashboard-header">
           <h1>Candidate Portal</h1>
-          <button onClick={handleLogout} className="logout-btn">Logout</button>
+          <div className="actions-row">
+            <button onClick={loadApplications} className="secondary-btn">Refresh</button>
+            <button onClick={handleLogout} className="logout-btn">Logout</button>
+          </div>
         </div>
 
         {message && <div className="info-success">{message}</div>}
         {error && <div className="error-message">{error}</div>}
 
+        <div className="stats-grid">
+          <div className="stat-card">
+            <p className="stat-label">Published Jobs</p>
+            <p className="stat-value">{jobs.length}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">My Applications</p>
+            <p className="stat-value">{applications.length}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Submitted</p>
+            <p className="stat-value">{submittedCount}</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Ranked</p>
+            <p className="stat-value">{rankedCount}</p>
+          </div>
+        </div>
+
         <div className="user-info">
           <h2>Apply to a Job</h2>
+          <div className="form-group">
+            <label htmlFor="searchJobs">Search jobs by title or skill</label>
+            <input
+              id="searchJobs"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="e.g. react, golang, hr"
+            />
+          </div>
           <form onSubmit={submitApplication}>
             <div className="form-group">
               <label htmlFor="job">Job</label>
               <select id="job" value={selectedJobId} onChange={(e) => setSelectedJobId(e.target.value)}>
                 <option value="">Select a published job</option>
-                {jobs.map((job) => (
+                {filteredJobs.map((job) => (
                   <option key={job.id} value={job.id}>{job.title}</option>
                 ))}
               </select>
@@ -108,14 +152,24 @@ function CandidatePortal({ setIsAuthenticated }) {
 
         <div className="user-info">
           <h2>My Applications</h2>
-          {applications.length === 0 ? (
+          <div className="form-group">
+            <label htmlFor="statusFilter">Filter by status</label>
+            <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="submitted">Submitted</option>
+              <option value="parsed">Parsed</option>
+              <option value="ranked">Ranked</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          {filteredApplications.length === 0 ? (
             <p>No applications yet.</p>
           ) : (
-            applications.map((app) => (
+            filteredApplications.map((app) => (
               <div className="info-item" key={app.id}>
-                <span className="info-label">Job #{app.job_id}</span>
+                <span className="info-label">Application #{app.id} (Job #{app.job_id})</span>
                 <span className="info-value">
-                  {app.status} | CV: {app.cv_score?.toFixed?.(2) ?? app.cv_score}
+                  {app.status} | CV: {Number(app.cv_score || 0).toFixed(2)} | Final: {Number(app.final_score || 0).toFixed(2)}
                 </span>
               </div>
             ))

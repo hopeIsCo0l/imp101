@@ -6,7 +6,13 @@ import './AdminPanel.css'
 
 function AdminPanel({ setIsAuthenticated }) {
   const [users, setUsers] = useState([])
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [actionLoadingId, setActionLoadingId] = useState(null)
   const [error, setError] = useState('')
   const [debugInfo, setDebugInfo] = useState(null)
   const navigate = useNavigate()
@@ -25,14 +31,15 @@ function AdminPanel({ setIsAuthenticated }) {
       return
     }
 
-    fetchUsers()
-  }, [navigate])
+    fetchUsers(page)
+  }, [navigate, page])
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (nextPage = 1) => {
     try {
-      const response = await api.get('/admin/users')
+      const response = await api.get(`/admin/users?page=${nextPage}&limit=${limit}`)
       setUsers(response.data)
       setDebugInfo(null) // Clear debug info on success
+      setError('')
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch users'
       const status = err.response?.status
@@ -71,6 +78,46 @@ function AdminPanel({ setIsAuthenticated }) {
       setLoading(false)
     }
   }
+
+  const handleLogout = () => {
+    removeToken()
+    if (setIsAuthenticated) setIsAuthenticated(false)
+    window.location.href = '/login'
+  }
+
+  const updateUserRole = async (userId, role) => {
+    try {
+      setActionLoadingId(userId)
+      await api.patch(`/admin/users/${userId}/role`, { role })
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role } : user)))
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update role')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  const updateUserStatus = async (userId, status) => {
+    try {
+      setActionLoadingId(userId)
+      await api.patch(`/admin/users/${userId}/status`, { status })
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, status } : user)))
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update status')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  const visibleUsers = users.filter((user) => {
+    const email = String(user.email || '').toLowerCase()
+    const role = String(user.role || '')
+    const status = String(user.status || '')
+    const matchSearch = email.includes(search.toLowerCase())
+    const matchRole = roleFilter === 'all' ? true : role === roleFilter
+    const matchStatus = statusFilter === 'all' ? true : status === statusFilter
+    return matchSearch && matchRole && matchStatus
+  })
 
   if (loading) {
     return (
@@ -138,12 +185,7 @@ function AdminPanel({ setIsAuthenticated }) {
               Back to Dashboard
             </button>
             <button 
-              onClick={() => {
-                // Clear token and redirect to login
-                removeToken()
-                if (setIsAuthenticated) setIsAuthenticated(false)
-                window.location.href = '/login'
-              }} 
+              onClick={handleLogout} 
               className="back-btn"
               style={{ backgroundColor: '#dc3545' }}
             >
@@ -160,9 +202,47 @@ function AdminPanel({ setIsAuthenticated }) {
       <div className="admin-card">
         <div className="admin-header">
           <h1>Admin Panel</h1>
-          <button onClick={() => navigate('/dashboard')} className="back-btn">
-            Back to Dashboard
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => navigate('/dashboard')} className="back-btn">
+              Dashboard
+            </button>
+            <button onClick={handleLogout} className="back-btn" style={{ backgroundColor: '#dc3545' }}>
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+
+        <div className="admin-toolbar">
+          <div className="toolbar-item">
+            <label htmlFor="searchEmail">Search email</label>
+            <input
+              id="searchEmail"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="user@example.com"
+            />
+          </div>
+          <div className="toolbar-item">
+            <label htmlFor="roleFilter">Role</label>
+            <select id="roleFilter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="candidate">candidate</option>
+              <option value="recruiter">recruiter</option>
+              <option value="administrator">administrator</option>
+              <option value="super_admin">super_admin</option>
+            </select>
+          </div>
+          <div className="toolbar-item">
+            <label htmlFor="statusFilter">Status</label>
+            <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+              <option value="locked">locked</option>
+            </select>
+          </div>
         </div>
 
         <div className="admin-content">
@@ -174,36 +254,71 @@ function AdminPanel({ setIsAuthenticated }) {
                   <th>ID</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th>Created At</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 ? (
+                {visibleUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="no-data">
+                    <td colSpan="6" className="no-data">
                       No users found
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  visibleUsers.map((user) => (
                     <tr key={user.id}>
                       <td>{user.id}</td>
                       <td>{user.email}</td>
                       <td>
-                        <span className={`role-badge role-badge-${user.role || 'regular'}`}>
-                          {user.role || 'regular'}
-                        </span>
+                        {user.role || 'candidate'}
+                      </td>
+                      <td>
+                        {user.status || 'active'}
                       </td>
                       <td>
                         {user.created_at
                           ? new Date(user.created_at).toLocaleString()
                           : 'N/A'}
                       </td>
+                      <td>
+                        <div className="action-wrap">
+                          <select
+                            value={user.role || 'candidate'}
+                            onChange={(e) => updateUserRole(user.id, e.target.value)}
+                            disabled={actionLoadingId === user.id}
+                          >
+                            <option value="candidate">candidate</option>
+                            <option value="recruiter">recruiter</option>
+                            <option value="administrator">administrator</option>
+                            <option value="super_admin">super_admin</option>
+                          </select>
+                          <select
+                            value={user.status || 'active'}
+                            onChange={(e) => updateUserStatus(user.id, e.target.value)}
+                            disabled={actionLoadingId === user.id}
+                          >
+                            <option value="active">active</option>
+                            <option value="inactive">inactive</option>
+                            <option value="locked">locked</option>
+                          </select>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="pagination-row">
+            <button className="back-btn" disabled={page === 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>
+              Previous
+            </button>
+            <span>Page {page}</span>
+            <button className="back-btn" disabled={users.length < limit} onClick={() => setPage((prev) => prev + 1)}>
+              Next
+            </button>
           </div>
         </div>
       </div>

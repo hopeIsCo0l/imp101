@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './components/Login'
 import Signup from './components/Signup'
+import Dashboard from './components/Dashboard'
 import CandidatePortal from './components/CandidatePortal'
 import RecruiterPortal from './components/RecruiterPortal'
 import AdminPanel from './components/AdminPanel'
@@ -37,6 +38,12 @@ function App() {
             path="/signup" 
             element={
               isAuthenticated ? <Navigate to={getHomeRouteByRole(role)} /> : <Signup setIsAuthenticated={setIsAuthenticated} />
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              isAuthenticated ? <Dashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />
             } 
           />
           <Route 

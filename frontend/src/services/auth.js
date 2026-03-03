@@ -50,7 +50,6 @@ export const getUserId = () => {
 }
 
 export const getHomeRouteByRole = (role) => {
-  if (role === 'super_admin' || role === 'administrator') return '/admin'
-  if (role === 'recruiter') return '/recruiter'
-  return '/candidate'
+  if (!role) return '/login'
+  return '/dashboard'
 }
