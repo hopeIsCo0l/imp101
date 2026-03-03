@@ -1,4 +1,4 @@
-# EAA Recruit (Go + React, PostgreSQL)
+# EAA Recruit (FastAPI + React, PostgreSQL)
 
 SRS/SDS-aligned recruitment platform foundation with:
 
@@ -12,7 +12,7 @@ SRS/SDS-aligned recruitment platform foundation with:
 
 ## Stack
 
-- Backend: Go, Gin, GORM, PostgreSQL
+- Backend: Python, FastAPI, SQLAlchemy, PostgreSQL
 - Frontend: React + Vite
 - Deployment: Docker Compose
 
@@ -33,8 +33,8 @@ Services:
 1. Backend:
 
 ```bash
-go mod tidy
-go run main.go
+pip install -r requirements.txt
+uvicorn backend_fastapi.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
 2. Frontend:

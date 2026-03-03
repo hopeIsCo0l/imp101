@@ -10,26 +10,23 @@ on:
 
 jobs:
   backend:
-    name: Backend (Go)
+    name: Backend (FastAPI)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          go-version-file: go.mod
+          python-version: "3.12"
 
       - name: Download dependencies
-        run: go mod download
+        run: pip install -r requirements.txt
 
-      - name: Run tests
-        run: go test ./...
-
-      - name: Build
-        run: go build ./...
+      - name: Validate Python syntax
+        run: python -m compileall backend_fastapi
 
   frontend:
     name: Frontend (Node)

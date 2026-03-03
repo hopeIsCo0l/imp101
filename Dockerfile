@@ -1,43 +1,17 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+FROM python:3.12-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install git (no longer need C compiler for PostgreSQL)
-RUN apk add --no-cache git
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Enable automatic toolchain download for newer Go versions
-ENV GOTOOLCHAIN=auto
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Copy go mod files
-COPY go.mod go.sum* ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Download dependencies
-RUN go mod download
-
-# Copy source code
 COPY . .
 
-# Build the application (no CGO needed for PostgreSQL driver)
-RUN GOOS=linux go build -o main .
-
-# Final stage
-FROM alpine:latest
-
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-# Copy the binary from builder
-COPY --from=builder /app/main .
-
-# Expose port
 EXPOSE 8080
 
-# Set environment variable for JWT secret (can be overridden)
-ENV JWT_SECRET="development-secret-change-in-production"
-
-# Run the application
-CMD ["./main"]
+CMD ["uvicorn", "backend_fastapi.main:app", "--host", "0.0.0.0", "--port", "8080"]
